@@ -1,6 +1,5 @@
 import random
 import sys
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Annotated
 
@@ -8,11 +7,6 @@ import typer
 from art import tprint  # type: ignore
 
 DEFAULT_LUCKY_FILE = Path(".lucky")
-
-
-@dataclass
-class FileIsEmptyError(Exception):
-    filename: Path
 
 
 def app(
@@ -24,18 +18,25 @@ def app(
     ] = True,
 ):
     try:
-        with open(file, "r") as f:
-            lines = [x.strip() for x in f]
-        if len(lines) == 0:
-            raise FileIsEmptyError(file)
-        line = random.choice(lines)
-        tprint(line) if art else print(line)
-    except FileNotFoundError as e:
-        print(f"lucky could not read file: {e.filename}")
+        winner = lucky_winner(file)
+        print_winner(winner, art)
+    except FileNotFoundError:
+        print(f"lucky could not read file: {file}")
         sys.exit(1)
-    except FileIsEmptyError as e:
-        print(f"lucky found an empty file: {e.filename}")
+    except IndexError:
+        print(f"lucky found an empty file: {file}")
         sys.exit(1)
+
+
+def lucky_winner(path: Path) -> str:
+    """Select a random lucky winner."""
+    with open(path, "r") as f:
+        return random.choice([line.strip() for line in f])
+
+
+def print_winner(winner: str, art: bool):
+    """Print the winner, artfully if asked."""
+    tprint(winner) if art else print(winner)
 
 
 app.__doc__ = f"""
