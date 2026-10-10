@@ -52,12 +52,8 @@ def app(
 
 def search_paths(path: Path) -> Generator[Path]:
     """The different paths that lucky should try to read."""
-    path = path.absolute()
     home = Path.home()
-    return (
-        p / path.name
-        for p in filter(lambda parent: parent.is_relative_to(home), path.parents)
-    )
+    return (p / path.name for p in path.absolute().parents if p.is_relative_to(home))
 
 
 def lucky_winner(path: Path) -> str:
