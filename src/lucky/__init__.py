@@ -78,7 +78,9 @@ def singleton[T](x: T) -> Generator[T]:
 app.__doc__ = f"""
 :four_leaf_clover: Choose a lucky winner!
 
-The winner is chosen by default from a file called {DEFAULT_LUCKY_FILE} in the current directory.
+The lucky winner is selected randomly as one of the lines of a file. By default, it tries '{DEFAULT_LUCKY_FILE}', starting from the current directory and trying parent directories until it reaches the home directory.
+
+Lucky's behavior can be configured, use `--help` for detailed instructions!
 """
 
 
