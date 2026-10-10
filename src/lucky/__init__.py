@@ -24,6 +24,9 @@ def app(
             help="Whether to recursively search parent directories for the file"
         ),
     ] = True,
+    verbose: Annotated[
+        bool, typer.Option(help="Whether to print error messages during execution")
+    ] = False,
 ):
     paths = search_paths(file, Path.home()) if recurse else singleton(file)
     for path in paths:
@@ -32,10 +35,12 @@ def app(
             print_winner(winner, art)
             sys.exit(0)
         except FileNotFoundError:
-            print(f"lucky could not read file: {path.absolute()}")
+            if verbose:
+                print(f"lucky could not read file: {path.absolute()}")
             continue
         except IndexError:
-            print(f"lucky found an empty file: {path.absolute()}")
+            if verbose:
+                print(f"lucky found an empty file: {path.absolute()}")
             continue
     print(
         emoji.emojize(
@@ -55,13 +60,13 @@ def search_paths(path: Path, home: Path) -> Generator[Path]:
 
 
 def lucky_winner(path: Path) -> str:
-    """Select a random lucky winner."""
+    """Read the file and randomly select one of the lines as the lucky winner."""
     with open(path, "r") as f:
         return random.choice([line.strip() for line in f])
 
 
 def print_winner(winner: str, art: bool):
-    """Print the winner, artfully if asked."""
+    """Print the winner, artsy if asked."""
     tprint(winner) if art else print(winner)
 
 
