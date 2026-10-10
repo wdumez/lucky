@@ -5,7 +5,10 @@ description = "Add your description here"
 readme = "README.md"
 authors = [{ name = "William Dumez", email = "william.dumez@skynet.be" }]
 requires-python = ">=3.14"
-dependencies = ["typer>=0.27.3"]
+dependencies = [
+    "art>=6.5",
+    "typer>=0.27.3",
+]
 
 [project.scripts]
 lucky = "lucky:main"
