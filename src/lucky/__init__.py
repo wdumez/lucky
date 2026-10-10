@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Annotated
 
 import typer
+from art import tprint  # type: ignore
 
 DEFAULT_LUCKY_FILE = ".lucky"
 
@@ -17,6 +18,9 @@ def app(
     file: Annotated[
         str, typer.Argument(help="The file to read the lucky winner from")
     ] = DEFAULT_LUCKY_FILE,
+    art: Annotated[
+        bool, typer.Option(help="Whether to show the winner with fancy ASCII art")
+    ] = True,
 ):
     try:
         with open(file, "r") as f:
@@ -24,7 +28,7 @@ def app(
         if len(lines) == 0:
             raise FileIsEmptyError(file)
         line = random.choice(lines)
-        print(line)
+        tprint(line) if art else print(line)
     except FileNotFoundError as e:
         print(f"lucky could not read file: {e.filename}")
         sys.exit(1)
