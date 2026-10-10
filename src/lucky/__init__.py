@@ -1,2 +1,9 @@
-def main() -> None:
-    print("Hello from lucky!")
+import typer
+
+
+def main():
+    typer.run(app)
+
+
+def app():
+    print("Hello, world!")
