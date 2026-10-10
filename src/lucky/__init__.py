@@ -1,22 +1,23 @@
 import random
 import sys
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Annotated
 
 import typer
 from art import tprint  # type: ignore
 
-DEFAULT_LUCKY_FILE = ".lucky"
+DEFAULT_LUCKY_FILE = Path(".lucky")
 
 
 @dataclass
 class FileIsEmptyError(Exception):
-    filename: str
+    filename: Path
 
 
 def app(
     file: Annotated[
-        str, typer.Argument(help="The file to read the lucky winner from")
+        Path, typer.Argument(help="The file to read the lucky winner from")
     ] = DEFAULT_LUCKY_FILE,
     art: Annotated[
         bool, typer.Option(help="Whether to show the winner with fancy ASCII art")
