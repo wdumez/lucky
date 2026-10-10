@@ -1,8 +1,10 @@
 import random
 import sys
+from collections.abc import Generator
 from pathlib import Path
 from typing import Annotated
 
+import emoji
 import typer
 from art import tprint  # type: ignore
 
@@ -16,16 +18,40 @@ def app(
     art: Annotated[
         bool, typer.Option(help="Whether to show the winner with fancy ASCII art")
     ] = True,
+    recurse: Annotated[
+        bool,
+        typer.Option(
+            help="Whether to recursively search parent directories for the file"
+        ),
+    ] = True,
 ):
-    try:
-        winner = lucky_winner(file)
-        print_winner(winner, art)
-    except FileNotFoundError:
-        print(f"lucky could not read file: {file}")
-        sys.exit(1)
-    except IndexError:
-        print(f"lucky found an empty file: {file}")
-        sys.exit(1)
+    paths = search_paths(file, Path.home()) if recurse else singleton(file)
+    for path in paths:
+        try:
+            winner = lucky_winner(path)
+            print_winner(winner, art)
+            sys.exit(0)
+        except FileNotFoundError:
+            print(f"lucky could not read file: {path.absolute()}")
+            continue
+        except IndexError:
+            print(f"lucky found an empty file: {path.absolute()}")
+            continue
+    print(
+        emoji.emojize(
+            "lucky could not find a valid lucky file :downcast_face_with_sweat:"
+        )
+    )
+    sys.exit(1)
+
+
+def search_paths(path: Path, home: Path) -> Generator[Path]:
+    """The different paths that lucky should try to read."""
+    path = path.absolute()
+    return (
+        p / path.name
+        for p in filter(lambda parent: parent.is_relative_to(home), path.parents)
+    )
 
 
 def lucky_winner(path: Path) -> str:
@@ -37,6 +63,11 @@ def lucky_winner(path: Path) -> str:
 def print_winner(winner: str, art: bool):
     """Print the winner, artfully if asked."""
     tprint(winner) if art else print(winner)
+
+
+def singleton[T](x: T) -> Generator[T]:
+    """Create a generator that yields the given element once."""
+    yield x
 
 
 app.__doc__ = f"""
