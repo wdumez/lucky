@@ -28,7 +28,7 @@ def app(
         bool, typer.Option(help="Whether to print error messages during execution")
     ] = False,
 ):
-    paths = search_paths(file, Path.home()) if recurse else singleton(file)
+    paths = search_paths(file) if recurse else singleton(file)
     for path in paths:
         try:
             winner = lucky_winner(path)
@@ -50,9 +50,10 @@ def app(
     sys.exit(1)
 
 
-def search_paths(path: Path, home: Path) -> Generator[Path]:
+def search_paths(path: Path) -> Generator[Path]:
     """The different paths that lucky should try to read."""
     path = path.absolute()
+    home = Path.home()
     return (
         p / path.name
         for p in filter(lambda parent: parent.is_relative_to(home), path.parents)
