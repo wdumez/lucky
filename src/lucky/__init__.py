@@ -27,21 +27,38 @@ def app(
     verbose: Annotated[
         bool, typer.Option(help="Whether to print error messages during execution")
     ] = False,
+    add: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--add",
+            "-a",
+            help="Add a candidate for this run only (can be repeated)",
+        ),
+    ] = None,
+    remove: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--remove",
+            "-r",
+            help="Exclude a candidate for this run only (can be repeated)",
+        ),
+    ] = None,
 ):
     paths = search_paths(file) if recurse else singleton(file)
     for path in paths:
         try:
-            winner = lucky_winner(path)
-            print_winner(winner, art)
-            sys.exit(0)
+            candidates = read_candidates(path)
         except FileNotFoundError:
             if verbose:
                 print(f"lucky could not read file: {path.absolute()}")
             continue
-        except IndexError:
+        candidates = adjust_candidates(candidates, add or [], remove or [])
+        if not candidates:
             if verbose:
-                print(f"lucky found an empty file: {path.absolute()}")
+                print(f"lucky found no candidates in file: {path.absolute()}")
             continue
+        print_winner(random.choice(candidates), art)
+        sys.exit(0)
     print(
         emoji.emojize(
             "lucky could not find a valid lucky file :downcast_face_with_sweat:"
@@ -56,10 +73,19 @@ def search_paths(path: Path) -> Generator[Path]:
     return (p / path.name for p in path.absolute().parents if p.is_relative_to(home))
 
 
-def lucky_winner(path: Path) -> str:
-    """Read the file and randomly select one of the lines as the lucky winner."""
+def read_candidates(path: Path) -> list[str]:
+    """Read the file and return its lines as the list of candidates."""
     with open(path, "r") as f:
-        return random.choice([line.strip() for line in f])
+        return [line.strip() for line in f]
+
+
+def adjust_candidates(
+    candidates: list[str], add: list[str], remove: list[str]
+) -> list[str]:
+    """Add and remove candidates for this run, without touching the file."""
+    excluded = {name.strip() for name in remove}
+    added = [name.strip() for name in add]
+    return [c for c in candidates + added if c not in excluded]
 
 
 def print_winner(winner: str, art: bool):
