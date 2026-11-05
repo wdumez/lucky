@@ -1,4 +1,5 @@
 import random
+import shutil
 import sys
 import time
 from collections.abc import Generator
@@ -12,6 +13,16 @@ from art import DEFAULT_FONT, FONT_NAMES, tprint  # type: ignore
 DEFAULT_LUCKY_FILE = Path(".lucky")
 STDIN = Path("-")
 RANDOM_FONTS = ["random", "rnd-small", "rnd-medium", "rnd-large", "rnd-xlarge"]
+
+# Slot-machine reel: 26 frames slowing from 30 ms to about 190 ms, roughly 2.7 s in all.
+REEL_HEIGHT = 5
+REEL_STEPS = 25
+REEL_FIRST_DELAY = 0.03
+REEL_SLOWDOWN = 1.08
+REEL_FINAL_PAUSE = 0.5
+
+HIDE_CURSOR, SHOW_CURSOR = "\033[?25l", "\033[?25h"
+DIM, BOLD_GREEN, YELLOW, RESET = "\033[2m", "\033[1;32m", "\033[33m", "\033[0m"
 
 
 def validate_font(font: str) -> str:
@@ -86,7 +97,7 @@ def app(
                 print(f"lucky found an empty file: {describe(path)}")
             continue
         if spin and sys.stdout.isatty() and len(set(candidates)) > 1:
-            spin_through(candidates)
+            spin_through(candidates, winner)
         print_winner(winner, art, font)
         sys.exit(0)
     print(
@@ -118,19 +129,51 @@ def describe(path: Path) -> str:
     return "standard input" if path == STDIN else str(path.absolute())
 
 
-def spin_through(candidates: list[str], duration: float = 2.0):
-    """Flash random candidates on one line, slowing down like a wheel of fortune."""
-    delay, elapsed = 0.03, 0.0
+def spin_through(candidates: list[str], winner: str):
+    """Spin a slot-machine reel through the candidates until it lands on the winner."""
+    reel = list(dict.fromkeys(candidates))
+    random.shuffle(reel)
+    stop = reel.index(winner)
+    max_width = shutil.get_terminal_size().columns - 8
+    width = max(5, min(max(map(len, reel)) + 4, max_width))
+    out = sys.stdout
+    drawn = False
+    out.write(HIDE_CURSOR)
     try:
-        while elapsed < duration:
-            sys.stdout.write(f"\r\033[K{random.choice(candidates)}")
-            sys.stdout.flush()
+        delay = REEL_FIRST_DELAY
+        for step in range(REEL_STEPS, -1, -1):
+            if drawn:
+                out.write(f"\033[{REEL_HEIGHT}F")
+            out.write(render_reel(reel, (stop - step) % len(reel), width))
+            out.flush()
+            drawn = True
             time.sleep(delay)
-            elapsed += delay
-            delay *= 1.15
+            delay *= REEL_SLOWDOWN
+        time.sleep(REEL_FINAL_PAUSE)
     finally:
-        sys.stdout.write("\r\033[K")
-        sys.stdout.flush()
+        if drawn:
+            out.write(f"\033[{REEL_HEIGHT}F\033[J")
+        out.write(SHOW_CURSOR)
+        out.flush()
+
+
+def render_reel(reel: list[str], centre: int, width: int) -> str:
+    """Draw the reel with the centre candidate highlighted between its neighbours."""
+
+    def cell(index: int, style: str) -> str:
+        name = reel[index % len(reel)]
+        if len(name) > width:
+            name = name[: width - 1] + "…"
+        return f"{style}{name.center(width)}{RESET}"
+
+    lines = [
+        f"  ╭{'─' * width}╮",
+        f"  │{cell(centre - 1, DIM)}│",
+        f"{YELLOW}▶{RESET} │{cell(centre, BOLD_GREEN)}│ {YELLOW}◀{RESET}",
+        f"  │{cell(centre + 1, DIM)}│",
+        f"  ╰{'─' * width}╯",
+    ]
+    return "".join(f"{line}\033[K\n" for line in lines)
 
 
 def print_winner(winner: str, art: bool, font: str):
