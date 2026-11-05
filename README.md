@@ -38,7 +38,7 @@ Then let fate decide:
 lucky
 ```
 
-By default, the winner is shown with fancy ASCII art. To read from a different file, pass it as an argument:
+By default, lucky first spins through the candidates to build suspense, then shows the winner with fancy ASCII art. The spin is skipped when the output is not a terminal, so scripts and pipes get the winner straight away. To read from a different file, pass it as an argument:
 
 ```sh
 lucky path/to/candidates.txt
@@ -62,6 +62,7 @@ git log --format=%an | sort -u | lucky -
 | `--verbose` / `--no-verbose` | Whether to print error messages during execution              | `--no-verbose` |
 | `--add` / `-a NAME`          | Add a candidate for this run only (can be repeated)           |                |
 | `--remove` / `-r NAME`       | Exclude a candidate for this run only (can be repeated)       |                |
+| `--spin` / `--no-spin`       | Whether to spin through the candidates first, terminal only   | `--spin`       |
 
 For example, to leave out Bob and include Dave for a single draw, without editing `.lucky`:
 

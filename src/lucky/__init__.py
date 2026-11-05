@@ -1,5 +1,6 @@
 import random
 import sys
+import time
 from collections.abc import Generator
 from pathlib import Path
 from typing import Annotated
@@ -80,6 +81,12 @@ def app(
             help="Exclude a candidate for this run only (can be repeated)",
         ),
     ] = None,
+    spin: Annotated[
+        bool,
+        typer.Option(
+            help="Whether to build suspense by spinning through the candidates first, only in a terminal"
+        ),
+    ] = True,
 ):
     paths = search_paths(file) if recurse and file != STDIN else singleton(file)
     for path in paths:
@@ -94,7 +101,10 @@ def app(
             if verbose:
                 print(f"lucky found no candidates in file: {describe(path)}")
             continue
-        print_winner(random.choice(candidates), art, font)
+        winner = random.choice(candidates)
+        if spin and sys.stdout.isatty() and len(set(candidates)) > 1:
+            spin_through(candidates)
+        print_winner(winner, art, font)
         sys.exit(0)
     print(
         emoji.emojize(
@@ -132,6 +142,21 @@ def adjust_candidates(
 def describe(path: Path) -> str:
     """A human-readable description of where the candidates are read from."""
     return "standard input" if path == STDIN else str(path.absolute())
+
+
+def spin_through(candidates: list[str], duration: float = 2.0):
+    """Flash random candidates on one line, slowing down like a wheel of fortune."""
+    delay, elapsed = 0.03, 0.0
+    try:
+        while elapsed < duration:
+            sys.stdout.write(f"\r\033[K{random.choice(candidates)}")
+            sys.stdout.flush()
+            time.sleep(delay)
+            elapsed += delay
+            delay *= 1.15
+    finally:
+        sys.stdout.write("\r\033[K")
+        sys.stdout.flush()
 
 
 def print_winner(winner: str, art: bool, font: str):
