@@ -9,11 +9,15 @@ import typer
 from art import tprint  # type: ignore
 
 DEFAULT_LUCKY_FILE = Path(".lucky")
+STDIN = Path("-")
 
 
 def app(
     file: Annotated[
-        Path, typer.Argument(help="The file to read the lucky winner from")
+        Path,
+        typer.Argument(
+            help="The file to read the lucky winner from, use '-' to read from standard input"
+        ),
     ] = DEFAULT_LUCKY_FILE,
     art: Annotated[
         bool, typer.Option(help="Whether to show the winner with fancy ASCII art")
@@ -44,18 +48,18 @@ def app(
         ),
     ] = None,
 ):
-    paths = search_paths(file) if recurse else singleton(file)
+    paths = search_paths(file) if recurse and file != STDIN else singleton(file)
     for path in paths:
         try:
             candidates = read_candidates(path)
         except FileNotFoundError:
             if verbose:
-                print(f"lucky could not read file: {path.absolute()}")
+                print(f"lucky could not read file: {describe(path)}")
             continue
         candidates = adjust_candidates(candidates, add or [], remove or [])
         if not candidates:
             if verbose:
-                print(f"lucky found no candidates in file: {path.absolute()}")
+                print(f"lucky found no candidates in file: {describe(path)}")
             continue
         print_winner(random.choice(candidates), art)
         sys.exit(0)
@@ -74,9 +78,13 @@ def search_paths(path: Path) -> Generator[Path]:
 
 
 def read_candidates(path: Path) -> list[str]:
-    """Read the file and return its lines as the list of candidates."""
-    with open(path, "r") as f:
-        return [line.strip() for line in f]
+    """Read the candidates from the file, or from standard input if the path is '-'."""
+    if path == STDIN:
+        lines = sys.stdin.read().splitlines()
+    else:
+        with open(path, "r") as f:
+            lines = f.read().splitlines()
+    return [line.strip() for line in lines]
 
 
 def adjust_candidates(
@@ -86,6 +94,11 @@ def adjust_candidates(
     excluded = {name.strip() for name in remove}
     added = [name.strip() for name in add]
     return [c for c in candidates + added if c not in excluded]
+
+
+def describe(path: Path) -> str:
+    """A human-readable description of where the candidates are read from."""
+    return "standard input" if path == STDIN else str(path.absolute())
 
 
 def print_winner(winner: str, art: bool):

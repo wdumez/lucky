@@ -44,11 +44,17 @@ By default, the winner is shown with fancy ASCII art. To read from a different f
 lucky path/to/candidates.txt
 ```
 
+Use `-` to read the candidates from standard input instead:
+
+```sh
+git log --format=%an | sort -u | lucky -
+```
+
 ### Options
 
 | Option                       | Description                                                   | Default        |
 | ---------------------------- | ------------------------------------------------------------- | -------------- |
-| `FILE`                       | The file to read the lucky winner from                        | `.lucky`       |
+| `FILE`                       | The file to read the lucky winner from, `-` for stdin         | `.lucky`       |
 | `--art` / `--no-art`         | Whether to show the winner with fancy ASCII art               | `--art`        |
 | `--recurse` / `--no-recurse` | Whether to recursively search parent directories for the file | `--recurse`    |
 | `--verbose` / `--no-verbose` | Whether to print error messages during execution              | `--no-verbose` |
