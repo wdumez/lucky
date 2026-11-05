@@ -6,10 +6,27 @@ from typing import Annotated
 
 import emoji
 import typer
-from art import tprint  # type: ignore
+from art import DEFAULT_FONT, FONT_NAMES, tprint  # type: ignore
 
 DEFAULT_LUCKY_FILE = Path(".lucky")
 STDIN = Path("-")
+RANDOM_FONTS = ["random", "rnd-small", "rnd-medium", "rnd-large", "rnd-xlarge"]
+
+
+def validate_font(font: str) -> str:
+    """Reject unknown fonts, which art would otherwise render as garbage."""
+    if font not in FONT_NAMES and font not in RANDOM_FONTS:
+        raise typer.BadParameter(
+            f"unknown font '{font}', use --list-fonts to see the available fonts"
+        )
+    return font
+
+
+def list_fonts(value: bool):
+    """Print the available ASCII art fonts and exit."""
+    if value:
+        print("\n".join([*RANDOM_FONTS, *FONT_NAMES]))
+        raise typer.Exit()
 
 
 def app(
@@ -22,6 +39,22 @@ def app(
     art: Annotated[
         bool, typer.Option(help="Whether to show the winner with fancy ASCII art")
     ] = True,
+    font: Annotated[
+        str,
+        typer.Option(
+            help="The ASCII art font to show the winner with, use --list-fonts to see them all",
+            callback=validate_font,
+        ),
+    ] = DEFAULT_FONT,
+    _list_fonts: Annotated[
+        bool,
+        typer.Option(
+            "--list-fonts",
+            help="List the available ASCII art fonts and exit",
+            callback=list_fonts,
+            is_eager=True,
+        ),
+    ] = False,
     recurse: Annotated[
         bool,
         typer.Option(
@@ -44,7 +77,7 @@ def app(
             if verbose:
                 print(f"lucky found an empty file: {describe(path)}")
             continue
-        print_winner(winner, art)
+        print_winner(winner, art, font)
         sys.exit(0)
     print(
         emoji.emojize(
@@ -75,9 +108,9 @@ def describe(path: Path) -> str:
     return "standard input" if path == STDIN else str(path.absolute())
 
 
-def print_winner(winner: str, art: bool):
+def print_winner(winner: str, art: bool, font: str):
     """Print the winner, artsy if asked."""
-    tprint(winner) if art else print(winner)
+    tprint(winner, font=font) if art else print(winner)
 
 
 def singleton[T](x: T) -> Generator[T]:

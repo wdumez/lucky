@@ -56,6 +56,8 @@ git log --format=%an | sort -u | lucky -
 | ---------------------------- | ------------------------------------------------------------- | -------------- |
 | `FILE`                       | The file to read the lucky winner from, `-` for stdin         | `.lucky`       |
 | `--art` / `--no-art`         | Whether to show the winner with fancy ASCII art               | `--art`        |
+| `--font FONT`                | The ASCII art font, e.g. `block` or `random`                  | `standard`     |
+| `--list-fonts`               | List the available ASCII art fonts and exit                   |                |
 | `--recurse` / `--no-recurse` | Whether to recursively search parent directories for the file | `--recurse`    |
 | `--verbose` / `--no-verbose` | Whether to print error messages during execution              | `--no-verbose` |
 
