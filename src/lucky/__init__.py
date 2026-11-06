@@ -59,7 +59,8 @@ def search_paths(path: Path) -> Generator[Path]:
 def lucky_winner(path: Path) -> str:
     """Read the file and randomly select one of the lines as the lucky winner."""
     with open(path, "r") as f:
-        return random.choice([line.strip() for line in f])
+        names = list(filter(None, map(str.strip, f)))
+    return random.choice(names)
 
 
 def print_winner(winner: str, art: bool):
