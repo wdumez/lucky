@@ -52,6 +52,14 @@ lucky path/to/candidates.txt
 | `--art` / `--no-art`         | Whether to show the winner with fancy ASCII art               | `--art`        |
 | `--recurse` / `--no-recurse` | Whether to recursively search parent directories for the file | `--recurse`    |
 | `--verbose` / `--no-verbose` | Whether to print error messages during execution              | `--no-verbose` |
+| `--add` / `-a NAME`          | Add a candidate for this run only (can be repeated)           |                |
+| `--remove` / `-r NAME`       | Exclude a candidate for this run only (can be repeated)       |                |
+
+For example, to leave out Bob and include Dave for a single draw, without editing `.lucky`:
+
+```sh
+lucky --remove Bob --add Dave
+```
 
 Run `lucky --help` for the full details.
 
