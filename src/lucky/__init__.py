@@ -1,23 +1,72 @@
 import random
+import shutil
 import sys
+import time
 from collections.abc import Generator
 from pathlib import Path
 from typing import Annotated
 
 import emoji
 import typer
-from art import tprint  # type: ignore
+from art import DEFAULT_FONT, FONT_NAMES, tprint  # type: ignore
 
 DEFAULT_LUCKY_FILE = Path(".lucky")
+STDIN = Path("-")
+RANDOM_FONTS = ["random", "rnd-small", "rnd-medium", "rnd-large", "rnd-xlarge"]
+
+# Slot-machine reel: 26 frames slowing from 30 ms to about 190 ms, roughly 2.7 s in all.
+REEL_HEIGHT = 5
+REEL_STEPS = 25
+REEL_FIRST_DELAY = 0.03
+REEL_SLOWDOWN = 1.08
+REEL_FINAL_PAUSE = 0.5
+
+HIDE_CURSOR, SHOW_CURSOR = "\033[?25l", "\033[?25h"
+DIM, BOLD_GREEN, YELLOW, RESET = "\033[2m", "\033[1;32m", "\033[33m", "\033[0m"
+
+
+def validate_font(font: str) -> str:
+    """Reject unknown fonts, which art would otherwise render as garbage."""
+    if font not in FONT_NAMES and font not in RANDOM_FONTS:
+        raise typer.BadParameter(
+            f"unknown font '{font}', use --list-fonts to see the available fonts"
+        )
+    return font
+
+
+def list_fonts(value: bool):
+    """Print the available ASCII art fonts and exit."""
+    if value:
+        print("\n".join([*RANDOM_FONTS, *FONT_NAMES]))
+        raise typer.Exit()
 
 
 def app(
     file: Annotated[
-        Path, typer.Argument(help="The file to read the lucky winner from")
+        Path,
+        typer.Argument(
+            help="The file to read the lucky winner from, use '-' to read from standard input"
+        ),
     ] = DEFAULT_LUCKY_FILE,
     art: Annotated[
         bool, typer.Option(help="Whether to show the winner with fancy ASCII art")
     ] = True,
+    font: Annotated[
+        str,
+        typer.Option(
+            help="The ASCII art font to show the winner with, use --list-fonts to see them all",
+            callback=validate_font,
+        ),
+    ] = DEFAULT_FONT,
+    _list_fonts: Annotated[
+        bool,
+        typer.Option(
+            "--list-fonts",
+            help="List the available ASCII art fonts and exit",
+            callback=list_fonts,
+            is_eager=True,
+        ),
+    ] = False,
     recurse: Annotated[
         bool,
         typer.Option(
@@ -43,21 +92,30 @@ def app(
             help="Exclude a candidate for this run only (can be repeated)",
         ),
     ] = None,
+    spin: Annotated[
+        bool,
+        typer.Option(
+            help="Whether to build suspense by spinning through the candidates first, only in a terminal"
+        ),
+    ] = True,
 ):
-    paths = search_paths(file) if recurse else singleton(file)
+    paths = search_paths(file) if recurse and file != STDIN else singleton(file)
     for path in paths:
         try:
             candidates = read_candidates(path)
         except FileNotFoundError:
             if verbose:
-                print(f"lucky could not read file: {path.absolute()}")
+                print(f"lucky could not read file: {describe(path)}")
             continue
         candidates = adjust_candidates(candidates, add or [], remove or [])
         if not candidates:
             if verbose:
-                print(f"lucky found no candidates in file: {path.absolute()}")
+                print(f"lucky found no candidates in file: {describe(path)}")
             continue
-        print_winner(random.choice(candidates), art)
+        winner = random.choice(candidates)
+        if spin and sys.stdout.isatty() and len(set(candidates)) > 1:
+            spin_through(candidates, winner)
+        print_winner(winner, art, font)
         sys.exit(0)
     print(
         emoji.emojize(
@@ -74,9 +132,13 @@ def search_paths(path: Path) -> Generator[Path]:
 
 
 def read_candidates(path: Path) -> list[str]:
-    """Read the file and return its lines as the list of candidates."""
-    with open(path, "r") as f:
-        return [line.strip() for line in f]
+    """Read the candidates from the file, or from standard input if the path is '-'."""
+    if path == STDIN:
+        lines = sys.stdin.read().splitlines()
+    else:
+        with open(path, "r") as f:
+            lines = f.read().splitlines()
+    return [line.strip() for line in lines]
 
 
 def adjust_candidates(
@@ -88,9 +150,61 @@ def adjust_candidates(
     return [c for c in candidates + added if c not in excluded]
 
 
-def print_winner(winner: str, art: bool):
+def describe(path: Path) -> str:
+    """A human-readable description of where the candidates are read from."""
+    return "standard input" if path == STDIN else str(path.absolute())
+
+
+def spin_through(candidates: list[str], winner: str):
+    """Spin a slot-machine reel through the candidates until it lands on the winner."""
+    reel = list(dict.fromkeys(candidates))
+    random.shuffle(reel)
+    stop = reel.index(winner)
+    max_width = shutil.get_terminal_size().columns - 8
+    width = max(5, min(max(map(len, reel)) + 4, max_width))
+    out = sys.stdout
+    drawn = False
+    out.write(HIDE_CURSOR)
+    try:
+        delay = REEL_FIRST_DELAY
+        for step in range(REEL_STEPS, -1, -1):
+            if drawn:
+                out.write(f"\033[{REEL_HEIGHT}F")
+            out.write(render_reel(reel, (stop - step) % len(reel), width))
+            out.flush()
+            drawn = True
+            time.sleep(delay)
+            delay *= REEL_SLOWDOWN
+        time.sleep(REEL_FINAL_PAUSE)
+    finally:
+        if drawn:
+            out.write(f"\033[{REEL_HEIGHT}F\033[J")
+        out.write(SHOW_CURSOR)
+        out.flush()
+
+
+def render_reel(reel: list[str], centre: int, width: int) -> str:
+    """Draw the reel with the centre candidate highlighted between its neighbours."""
+
+    def cell(index: int, style: str) -> str:
+        name = reel[index % len(reel)]
+        if len(name) > width:
+            name = name[: width - 1] + "…"
+        return f"{style}{name.center(width)}{RESET}"
+
+    lines = [
+        f"  ╭{'─' * width}╮",
+        f"  │{cell(centre - 1, DIM)}│",
+        f"{YELLOW}▶{RESET} │{cell(centre, BOLD_GREEN)}│ {YELLOW}◀{RESET}",
+        f"  │{cell(centre + 1, DIM)}│",
+        f"  ╰{'─' * width}╯",
+    ]
+    return "".join(f"{line}\033[K\n" for line in lines)
+
+
+def print_winner(winner: str, art: bool, font: str):
     """Print the winner, artsy if asked."""
-    tprint(winner) if art else print(winner)
+    tprint(winner, font=font) if art else print(winner)
 
 
 def singleton[T](x: T) -> Generator[T]:
