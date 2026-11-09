@@ -68,7 +68,16 @@ def app(
             is_eager=True,
         ),
     ] = False,
+    seed: Annotated[
+        int | None,
+        typer.Option(
+            "--seed",
+            "-s",
+            help="Seed the random selection for reproducible results",
+        ),
+    ] = None,
 ):
+    rng = random.Random(seed)
     paths = search_paths(file) if recurse else singleton(file)
     for path in paths:
         try:
@@ -87,7 +96,7 @@ def app(
                 f"lucky found only {len(candidates)} candidates, "
                 f"selecting all of them instead of {count}"
             )
-        winners = random.sample(candidates, k=min(count, len(candidates)))
+        winners = rng.sample(candidates, k=min(count, len(candidates)))
         for winner in winners:
             print_winner(winner, art)
         raise typer.Exit(0)
