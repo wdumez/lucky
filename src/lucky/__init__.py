@@ -43,6 +43,15 @@ def app(
             help="Exclude a candidate for this run only (can be repeated)",
         ),
     ] = None,
+    count: Annotated[
+        int,
+        typer.Option(
+            "--count",
+            "-c",
+            help="The number of winners to select (must be positive)",
+            min=1,
+        ),
+    ] = 1,
 ):
     paths = search_paths(file) if recurse else singleton(file)
     for path in paths:
@@ -57,7 +66,14 @@ def app(
             if verbose:
                 print(f"lucky found no candidates in file: {path.absolute()}")
             continue
-        print_winner(random.choice(candidates), art)
+        if verbose and count > len(candidates):
+            print(
+                f"lucky found only {len(candidates)} candidates, "
+                f"selecting all of them instead of {count}"
+            )
+        winners = random.sample(candidates, k=min(count, len(candidates)))
+        for winner in winners:
+            print_winner(winner, art)
         sys.exit(0)
     print(
         emoji.emojize(
