@@ -55,6 +55,7 @@ lucky path/to/candidates.txt
 | `--add` / `-a NAME`          | Add a candidate for this run only (can be repeated)           |                |
 | `--remove` / `-r NAME`       | Exclude a candidate for this run only (can be repeated)       |                |
 | `--count` / `-c COUNT`       | Number of distinct winners to select                          | `1`            |
+| `--seed` / `-s SEED`         | Use a seed for reproducible random selections                 |                |
 
 For example, to leave out Bob and include Dave for a single draw, without editing `.lucky`:
 
