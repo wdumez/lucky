@@ -20,6 +20,20 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    "bump-my-version>=1.8.1",
     "pyright>=1.1.414",
     "ruff>=0.17.0",
 ]
+
+[tool.bumpversion]
+current_version = "0.1.0"
+commit = true
+tag = true
+tag_name = "v{new_version}"
+message = "Bump version: {current_version} → {new_version}"
+pre_commit_hooks = ["uv lock", "git add uv.lock"]
+
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+search = 'version = "{current_version}"'
+replace = 'version = "{new_version}"'
