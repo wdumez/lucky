@@ -74,9 +74,9 @@ def search_paths(path: Path) -> Generator[Path]:
 
 
 def read_candidates(path: Path) -> list[str]:
-    """Read the file and return its lines as the list of candidates."""
+    """Read the file and return its filtered lines as the list of candidates."""
     with open(path, "r") as f:
-        return [line.strip() for line in f]
+        return list(filter(None, map(str.strip, f)))
 
 
 def adjust_candidates(
