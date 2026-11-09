@@ -37,3 +37,8 @@ pre_commit_hooks = ["uv lock", "git add uv.lock"]
 filename = "pyproject.toml"
 search = 'version = "{current_version}"'
 replace = 'version = "{new_version}"'
+
+[[tool.bumpversion.files]]
+filename = "src/lucky/__init__.py"
+search = 'VERSION = "{current_version}"'
+replace = 'VERSION = "{new_version}"'
