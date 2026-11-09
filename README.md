@@ -54,6 +54,7 @@ lucky path/to/candidates.txt
 | `--verbose` / `--no-verbose` | Whether to print error messages during execution              | `--no-verbose` |
 | `--add` / `-a NAME`          | Add a candidate for this run only (can be repeated)           |                |
 | `--remove` / `-r NAME`       | Exclude a candidate for this run only (can be repeated)       |                |
+| `--count` / `-c COUNT`       | Number of distinct winners to select                          | `1`            |
 
 For example, to leave out Bob and include Dave for a single draw, without editing `.lucky`:
 
