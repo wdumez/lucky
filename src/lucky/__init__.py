@@ -1,5 +1,4 @@
 import random
-import sys
 from collections.abc import Generator
 from pathlib import Path
 from typing import Annotated
@@ -9,6 +8,14 @@ import typer
 from art import tprint  # type: ignore
 
 DEFAULT_LUCKY_FILE = Path(".lucky")
+VERSION = "0.2.0"
+
+
+def version_callback(value: bool):
+    """Print the version number and exit."""
+    if value:
+        print(f"lucky {VERSION}")
+        raise typer.Exit()
 
 
 def app(
@@ -52,6 +59,15 @@ def app(
             min=1,
         ),
     ] = 1,
+    version: Annotated[
+        bool,
+        typer.Option(
+            "--version",
+            help="Print the version of lucky and exit.",
+            callback=version_callback,
+            is_eager=True,
+        ),
+    ] = False,
 ):
     paths = search_paths(file) if recurse else singleton(file)
     for path in paths:
@@ -74,13 +90,13 @@ def app(
         winners = random.sample(candidates, k=min(count, len(candidates)))
         for winner in winners:
             print_winner(winner, art)
-        sys.exit(0)
+        raise typer.Exit(0)
     print(
         emoji.emojize(
             "lucky could not find a valid lucky file :downcast_face_with_sweat:"
         )
     )
-    sys.exit(1)
+    raise typer.Exit(1)
 
 
 def search_paths(path: Path) -> Generator[Path]:
