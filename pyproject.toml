@@ -28,7 +28,7 @@ dev = [
 [tool.bumpversion]
 current_version = "0.1.0"
 commit = true
-tag = true
+tag = false
 tag_name = "v{new_version}"
 message = "Bump version: {current_version} → {new_version}"
 pre_commit_hooks = ["uv lock", "git add uv.lock"]
