@@ -3,9 +3,9 @@ from collections.abc import Generator
 from pathlib import Path
 from typing import Annotated
 
-import emoji
 import typer
 from art import tprint  # type: ignore
+from rich import print
 
 DEFAULT_LUCKY_FILE = Path(".lucky")
 VERSION = "0.2.0"
@@ -91,11 +91,7 @@ def app(
         for winner in winners:
             print_winner(winner, art)
         raise typer.Exit(0)
-    print(
-        emoji.emojize(
-            "lucky could not find a valid lucky file :downcast_face_with_sweat:"
-        )
-    )
+    print("lucky could not find a valid lucky file :downcast_face_with_sweat:")
     raise typer.Exit(1)
 
 
